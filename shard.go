@@ -15,21 +15,66 @@ type Metadata struct {
 	RequestCount uint32
 }
 
+/*
+*
+
+	zhmark 2024/8/19
+
+onRemove onRemoveCallback
+
+这是一个回调函数，用于处理缓存条目被移除时的操作。它允许在条目被删除时执行自定义的逻辑，例如资源清理或通知外部系统。
+isVerbose bool
+
+这是一个布尔值，指示是否启用详细日志记录。启用详细日志记录时，会输出更多的调试信息，帮助排查问题。
+statsEnabled bool
+
+这是一个布尔值，指示是否启用统计信息收集。如果启用，它会收集和记录缓存的运行统计信息。
+logger Logger
+
+这是一个日志记录器，用于输出缓存操作的日志。Logger 是一个接口或结构体，用于记录和管理日志信息。
+clock clock
+
+这是一个时钟接口或结构体，用于获取当前时间。它可能用于跟踪条目的生命周期或执行时间相关的操作。
+lifeWindow uint64
+
+这是一个无符号整数，用于定义缓存条目的生命周期窗口。它表示缓存条目在被认为过期之前的有效时间长度。
+hashmapStats map[uint64]uint32
+
+这是一个用于收集哈希映射统计信息的字段。它可能记录了每个哈希值对应的条目数或其他相关统计数据。
+stats Stats
+
+这是一个结构体或接口，用于存储和管理缓存的运行统计信息。它可能包含缓存命中率、请求次数等统计数据。
+cleanEnabled bool
+
+这是一个布尔值，指示是否启用缓存清理操作。如果启用，缓存会定期执行清理操作，以移除过期或不再使用的条目
+*
+*/
 type cacheShard struct {
-	hashmap     map[uint64]uint64
-	entries     queue.BytesQueue
-	lock        sync.RWMutex
+	//哈希映射，用于存储缓存条目的索引。键是条目的哈希值，值是条目的位置索引。哈希映射提供了对缓存条目的快速查找
+	hashmap map[uint64]uint64
+	//字节队列，用于存储实际的缓存数据条目。BytesQueue 是一个队列数据结构，负责管理和存取缓存条目
+	entries queue.BytesQueue
+	//读写锁，用于保护对 cacheShard 内部数据结构的并发访问。读写锁允许多个读取操作并发进行，但写操作会阻塞所有读操作和其他写操作，从而保证数据的一致性
+	lock sync.RWMutex
+	//字节切片，用作缓存条目的临时缓冲区。它用于读取和写入条目时的数据缓存，减少内存分配和拷贝的开销
 	entryBuffer []byte
-	onRemove    onRemoveCallback
-
-	isVerbose    bool
+	//回调函数，用于处理缓存条目被移除时的操作。它允许在条目被删除时执行自定义的逻辑，例如资源清理或通知外部系统
+	onRemove onRemoveCallback
+	//布尔值，指示是否启用详细日志记录。启用详细日志记录时，会输出更多的调试信息，帮助排查问题
+	isVerbose bool
+	//布尔值，指示是否启用统计信息收集。如果启用，它会收集和记录缓存的运行统计信息
 	statsEnabled bool
-	logger       Logger
-	clock        clock
-	lifeWindow   uint64
-
+	//日志记录器，支持自定义
+	logger Logger
+	//获取当前时间
+	clock clock
+	//无符号整数，用于定义缓存条目的生命周期窗口。它表示缓存条目在被认为过期之前的有效时间长度
+	lifeWindow uint64
+	//收集哈希映射统计信息的字段。记录了每个哈希值对应的条目数或其他相关统计数据
 	hashmapStats map[uint64]uint32
-	stats        Stats
+	//存储和管理缓存的运行统计信息。它可能包含缓存命中率、请求次数等统计数据
+	stats Stats
+	//是否启用缓存清理操作。如果启用，缓存会定期执行清理操作，以移除过期或不再使用的条目
 	cleanEnabled bool
 }
 
@@ -122,6 +167,7 @@ func (s *cacheShard) set(key string, hashedKey uint64, entry []byte) error {
 
 	s.lock.Lock()
 
+	// todo:2024/8/19 确认为什么要先清理
 	//检查 hashmap 中是否已有相同的 hashedKey。
 	//如果有，获取先前的条目，并调用 resetHashFromEntry 函数重置该条目的哈希值（通常是为了清理之前的哈希映射）。
 	//然后，从 hashmap 中删除旧的 hashedKey 条目

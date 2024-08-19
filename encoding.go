@@ -78,6 +78,7 @@ func readHashFromEntry(data []byte) uint64 {
 	return binary.LittleEndian.Uint64(data[timestampSizeInBytes:])
 }
 
+// 将 data 切片中从 timestampSizeInBytes 位置开始的数据重置为 0。确保这些数据字段不再持有之前的引用，释放资源和清理数据
 func resetHashFromEntry(data []byte) {
 	binary.LittleEndian.PutUint64(data[timestampSizeInBytes:], 0)
 }
