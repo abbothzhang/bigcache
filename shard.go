@@ -122,6 +122,9 @@ func (s *cacheShard) set(key string, hashedKey uint64, entry []byte) error {
 
 	s.lock.Lock()
 
+	//检查 hashmap 中是否已有相同的 hashedKey。
+	//如果有，获取先前的条目，并调用 resetHashFromEntry 函数重置该条目的哈希值（通常是为了清理之前的哈希映射）。
+	//然后，从 hashmap 中删除旧的 hashedKey 条目
 	if previousIndex := s.hashmap[hashedKey]; previousIndex != 0 {
 		if previousEntry, err := s.entries.Get(int(previousIndex)); err == nil {
 			resetHashFromEntry(previousEntry)
@@ -130,14 +133,21 @@ func (s *cacheShard) set(key string, hashedKey uint64, entry []byte) error {
 		}
 	}
 
+	//如果清理（淘汰）功能未启用，则检查缓存中是否存在最旧的条目（oldestEntry）。
+	//如果存在，调用 s.onEvict 方法处理淘汰操作，将最旧的条目移除或进行其他处理
 	if !s.cleanEnabled {
 		if oldestEntry, err := s.entries.Peek(); err == nil {
 			s.onEvict(oldestEntry, currentTimestamp, s.removeOldestEntry)
 		}
 	}
 
+	// 使用 wrapEntry 函数将条目封装起来。wrapEntry 函数创建一个新的条目对象，
+	//包括时间戳、哈希键、原始键、条目数据以及一个缓冲区（entryBuffer），以便在缓存中进行存储
 	w := wrapEntry(currentTimestamp, hashedKey, key, entry, &s.entryBuffer)
 
+	//使用循环将封装的条目 (w) 推入 entries 数据结构中。如果成功，更新 hashmap 中的索引，并解锁 lock，然后返回 nil 表示成功。
+	//如果推入操作失败（例如由于空间不足），调用 s.removeOldestEntry(NoSpace) 尝试移除最旧的条目以腾出空间。
+	//如果此操作仍未成功（即条目太大无法放入缓存），则解锁并返回一个错误，表示条目超出了最大缓存分片大小
 	for {
 		if index, err := s.entries.Push(w); err == nil {
 			s.hashmap[hashedKey] = uint64(index)

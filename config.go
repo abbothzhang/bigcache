@@ -2,6 +2,22 @@ package bigcache
 
 import "time"
 
+/**
+ zhmark 2024/8/18
+Shards: 缓存分片数量，必须是2的幂，用于提高并发性能。
+LifeWindow: 缓存条目的有效期，过期后条目会被清除。
+CleanWindow: 清理过期条目的时间间隔，设为0表示不自动清理。
+MaxEntriesInWindow: 生命周期窗口内的最大条目数，用于计算分片的初始大小。
+MaxEntrySize: 单个条目的最大大小（字节），用于计算分片的初始大小。
+StatsEnabled: 是否启用统计功能，跟踪缓存资源的访问次数。
+Verbose: 是否启用详细模式，打印内存分配信息。
+Hasher: 用于将键映射为64位整数的哈希函数，默认使用fnv64哈希。
+HardMaxCacheSize: 缓存的最大内存限制（MB），超过后会清除最旧的条目。
+OnRemove: 条目被移除时的回调函数，无论是因过期、空间不足还是删除。
+OnRemoveWithMetadata: 带有条目详细信息的移除回调。
+OnRemoveWithReason: 带有移除原因的回调函数。
+Logger: 日志记录接口，与 Verbose 结合使用
+**/
 // Config for BigCache
 type Config struct {
 	// Number of cache shards, value must be a power of two
