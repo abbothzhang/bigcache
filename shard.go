@@ -115,6 +115,7 @@ func (s *cacheShard) get(key string, hashedKey uint64) ([]byte, error) {
 		s.lock.RUnlock()
 		s.collision()
 		if s.isVerbose {
+			// 发生碰撞
 			s.logger.Printf("Collision detected. Both %q and %q have the same hash %x", key, entryKey, hashedKey)
 		}
 		return nil, ErrEntryNotFound
@@ -471,6 +472,7 @@ func (s *cacheShard) hitWithoutLock(key uint64) {
 	}
 }
 
+// 将缓存未命中的计数器加一
 func (s *cacheShard) miss() {
 	atomic.AddInt64(&s.stats.Misses, 1)
 }

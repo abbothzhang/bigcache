@@ -11,13 +11,24 @@ const (
 	headersSizeInBytes   = timestampSizeInBytes + hashSizeInBytes + keySizeInBytes // Number of bytes used for all headers
 )
 
+/*
+*
+
+	zhmark 2024/8/20 核心存储结构
+	blob:Binary Large Object,二进制大对象
+	entry:
+
+*
+*/
 func wrapEntry(timestamp uint64, hash uint64, key string, entry []byte, buffer *[]byte) []byte {
 	keyLength := len(key)
 	blobLength := len(entry) + headersSizeInBytes + keyLength
 
+	// 如果 buffer 的长度不足以容纳打包后的数据，重新分配一个足够大的字节切片
 	if blobLength > len(*buffer) {
 		*buffer = make([]byte, blobLength)
 	}
+	//将 buffer 指向的字节切片赋值给 blob，以便后续操作直接修改 blob
 	blob := *buffer
 
 	binary.LittleEndian.PutUint64(blob, timestamp)
