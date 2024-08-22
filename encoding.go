@@ -11,18 +11,22 @@ const (
 	headersSizeInBytes   = timestampSizeInBytes + hashSizeInBytes + keySizeInBytes // Number of bytes used for all headers
 )
 
-/*
-*
-
-	zhmark 2024/8/20 核心存储结构
-	blob:Binary Large Object,二进制大对象
-	entry:
-
-*
-*/
-func wrapEntry(timestamp uint64, hash uint64, key string, entry []byte, buffer *[]byte) []byte {
+// wrapEntry
+//
+//	@Description: zhmark 2024/8/20 核心存储结构
+//
+// blob:Binary Large Object,二进制大对象
+//
+//	@param timestamp:
+//	@param hash
+//	@param key
+//	@param entry
+//	@param buffer
+//	@return []byte
+func wrapEntry(timestamp uint64, hash uint64, key string, value []byte, buffer *[]byte) []byte {
 	keyLength := len(key)
-	blobLength := len(entry) + headersSizeInBytes + keyLength
+	// headersSizeInBytes = timestampSizeInBytes + hashSizeInBytes + keySizeInBytes
+	blobLength := headersSizeInBytes + keyLength + len(value)
 
 	// 如果 buffer 的长度不足以容纳打包后的数据，重新分配一个足够大的字节切片
 	if blobLength > len(*buffer) {
@@ -30,12 +34,13 @@ func wrapEntry(timestamp uint64, hash uint64, key string, entry []byte, buffer *
 	}
 	//将 buffer 指向的字节切片赋值给 blob，以便后续操作直接修改 blob
 	blob := *buffer
-
+	// zhmark 2024/8/21 blob结构：timestamp + hashkey + keyLength + key + value
 	binary.LittleEndian.PutUint64(blob, timestamp)
 	binary.LittleEndian.PutUint64(blob[timestampSizeInBytes:], hash)
 	binary.LittleEndian.PutUint16(blob[timestampSizeInBytes+hashSizeInBytes:], uint16(keyLength))
+	//使用 copy 函数将 key 和 value 复制到 blob 中
 	copy(blob[headersSizeInBytes:], key)
-	copy(blob[headersSizeInBytes+keyLength:], entry)
+	copy(blob[headersSizeInBytes+keyLength:], value)
 
 	return blob[:blobLength]
 }

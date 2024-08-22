@@ -111,6 +111,9 @@ func (s *cacheShard) get(key string, hashedKey uint64) ([]byte, error) {
 		s.lock.RUnlock()
 		return nil, err
 	}
+
+	//zhmark 2024/8/21 有可能因为不同的key生成的hashedKey相同，虽然这次get时候的hashkey在map中存在，
+	//但是实际上是其他key存入的，这个时候实际上是没有set过这个key的
 	if entryKey := readKeyFromEntry(wrappedEntry); key != entryKey {
 		s.lock.RUnlock()
 		s.collision()
@@ -163,17 +166,17 @@ func (s *cacheShard) getValidWrapEntry(key string, hashedKey uint64) ([]byte, er
 	return wrappedEntry, nil
 }
 
-func (s *cacheShard) set(key string, hashedKey uint64, entry []byte) error {
+func (s *cacheShard) set(key string, hashedKey uint64, value []byte) error {
 	currentTimestamp := uint64(s.clock.Epoch())
 
 	s.lock.Lock()
 
-	// todo:2024/8/19 确认为什么要先清理
 	//检查 hashmap 中是否已有相同的 hashedKey。
 	//如果有，获取先前的条目，并调用 resetHashFromEntry 函数重置该条目的哈希值（通常是为了清理之前的哈希映射）。
 	//然后，从 hashmap 中删除旧的 hashedKey 条目
 	if previousIndex := s.hashmap[hashedKey]; previousIndex != 0 {
 		if previousEntry, err := s.entries.Get(int(previousIndex)); err == nil {
+			//打上一个已处理的标记，保证数据在淘汰的时候不再去调用OnRemove的callback
 			resetHashFromEntry(previousEntry)
 			//remove hashkey
 			delete(s.hashmap, hashedKey)
@@ -190,12 +193,13 @@ func (s *cacheShard) set(key string, hashedKey uint64, entry []byte) error {
 
 	// 使用 wrapEntry 函数将条目封装起来。wrapEntry 函数创建一个新的条目对象，
 	//包括时间戳、哈希键、原始键、条目数据以及一个缓冲区（entryBuffer），以便在缓存中进行存储
-	w := wrapEntry(currentTimestamp, hashedKey, key, entry, &s.entryBuffer)
+	w := wrapEntry(currentTimestamp, hashedKey, key, value, &s.entryBuffer)
 
 	//使用循环将封装的条目 (w) 推入 entries 数据结构中。如果成功，更新 hashmap 中的索引，并解锁 lock，然后返回 nil 表示成功。
 	//如果推入操作失败（例如由于空间不足），调用 s.removeOldestEntry(NoSpace) 尝试移除最旧的条目以腾出空间。
 	//如果此操作仍未成功（即条目太大无法放入缓存），则解锁并返回一个错误，表示条目超出了最大缓存分片大小
 	for {
+		// 将包装过的value放入entries中
 		if index, err := s.entries.Push(w); err == nil {
 			s.hashmap[hashedKey] = uint64(index)
 			s.lock.Unlock()

@@ -85,6 +85,15 @@ func (q *BytesQueue) Reset() {
 
 // Push copies entry at the end of queue and moves tail pointer. Allocates more space if needed.
 // Returns index for pushed data or error if maximum size queue limit is reached.
+
+// Push copies entry at the end of queue and moves tail pointer. Allocates more space if needed.
+// 将value放入队列中，并返回index
+//
+//	@Description:
+//	@receiver q
+//	@param data
+//	@return int
+//	@return error
 func (q *BytesQueue) Push(data []byte) (int, error) {
 	neededSize := getNeededSize(len(data))
 
