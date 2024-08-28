@@ -56,6 +56,7 @@ func NewBigCache(config Config) (*BigCache, error) {
 }
 
 func newBigCache(ctx context.Context, config Config, clock clock) (*BigCache, error) {
+	// Shards数需要是2的次幂
 	if !isPowerOfTwo(config.Shards) {
 		return nil, errors.New("Shards number must be power of two")
 	}

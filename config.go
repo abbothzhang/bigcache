@@ -4,7 +4,7 @@ import "time"
 
 /**
  zhmark 2024/8/18
-Shards: 缓存分片数量，必须是2的幂，用于提高并发性能。
+Shards: 缓存分片数量，必须是2的幂，用于提高并发性能
 LifeWindow: 缓存条目的有效期，过期后条目会被清除。
 CleanWindow: 清理过期条目的时间间隔，设为0表示不自动清理。
 MaxEntriesInWindow: 生命周期窗口内的最大条目数，用于计算分片的初始大小。
@@ -21,22 +21,30 @@ Logger: 日志记录接口，与 Verbose 结合使用
 // Config for BigCache
 type Config struct {
 	// Number of cache shards, value must be a power of two
+	// 缓存分片数量，必须是2的幂，用于提高并发性能---感觉没必要做成配置，直接写死1024就行了
 	Shards int
 	// Time after which entry can be evicted
+	// 缓存条目的有效期，过期后条目会被清除，改为叫expireTime更好
 	LifeWindow time.Duration
 	// Interval between removing expired entries (clean up).
 	// If set to <= 0 then no action is performed. Setting to < 1 second is counterproductive — bigcache has a one second resolution.
+	// 自动清理过期条目的时间间隔，设为0表示不自动清理
 	CleanWindow time.Duration
 	// Max number of entries in life window. Used only to calculate initial size for cache shards.
 	// When proper value is set then additional memory allocation does not occur.
+	// 生命周期窗口内的最大条目数，用于计算分片的初始大小
 	MaxEntriesInWindow int
 	// Max size of entry in bytes. Used only to calculate initial size for cache shards.
+	// 单个条目的最大大小（字节），用于计算分片的初始大小
 	MaxEntrySize int
 	// StatsEnabled if true calculate the number of times a cached resource was requested.
+	//是否启用统计功能，跟踪缓存资源的访问次数
 	StatsEnabled bool
 	// Verbose mode prints information about new memory allocation
+	// 是否启用详细模式，打印内存分配信息
 	Verbose bool
 	// Hasher used to map between string keys and unsigned 64bit integers, by default fnv64 hashing is used.
+	// 用于将键映射为64位整数的哈希函数，默认使用fnv64哈希
 	Hasher Hasher
 	// HardMaxCacheSize is a limit for BytesQueue size in MB.
 	// It can protect application from consuming all available memory on machine, therefore from running OOM Killer.
@@ -45,15 +53,18 @@ type Config struct {
 	// HardMaxCacheSize due to Shards' s additional memory. Every Shard consumes additional memory for map of keys
 	// and statistics (map[uint64]uint32) the size of this map is equal to number of entries in
 	// cache ~ 2×(64+32)×n bits + overhead or map itself.
+	// 缓存的最大内存限制（MB），超过后会清除最旧的条目
 	HardMaxCacheSize int
 	// OnRemove is a callback fired when the oldest entry is removed because of its expiration time or no space left
 	// for the new entry, or because delete was called.
 	// Default value is nil which means no callback and it prevents from unwrapping the oldest entry.
 	// ignored if OnRemoveWithMetadata is specified.
+	// 条目被移除时的回调函数，无论是因过期、空间不足还是删除
 	OnRemove func(key string, entry []byte)
 	// OnRemoveWithMetadata is a callback fired when the oldest entry is removed because of its expiration time or no space left
 	// for the new entry, or because delete was called. A structure representing details about that specific entry.
 	// Default value is nil which means no callback and it prevents from unwrapping the oldest entry.
+	// 带有条目详细信息的移除回调
 	OnRemoveWithMetadata func(key string, entry []byte, keyMetadata Metadata)
 	// OnRemoveWithReason is a callback fired when the oldest entry is removed because of its expiration time or no space left
 	// for the new entry, or because delete was called. A constant representing the reason will be passed through.
@@ -65,6 +76,7 @@ type Config struct {
 
 	// Logger is a logging interface and used in combination with `Verbose`
 	// Defaults to `DefaultLogger()`
+	// 日志记录接口，与 Verbose 结合使用
 	Logger Logger
 }
 

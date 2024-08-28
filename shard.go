@@ -171,8 +171,8 @@ func (s *cacheShard) set(key string, hashedKey uint64, value []byte) error {
 
 	s.lock.Lock()
 
-	//检查 hashmap 中是否已有相同的 hashedKey。
-	//如果有，获取先前的条目，并调用 resetHashFromEntry 函数重置该条目的哈希值（通常是为了清理之前的哈希映射）。
+	//检查 hashmap 中是否已有相同的 hashedKey。如果有，则清理掉
+	//获取先前的条目，并调用 resetHashFromEntry 函数重置该条目的哈希值（通常是为了清理之前的哈希映射）。
 	//然后，从 hashmap 中删除旧的 hashedKey 条目
 	if previousIndex := s.hashmap[hashedKey]; previousIndex != 0 {
 		if previousEntry, err := s.entries.Get(int(previousIndex)); err == nil {
