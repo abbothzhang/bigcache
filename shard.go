@@ -408,8 +408,8 @@ func (s *cacheShard) removeOldestEntry(reason RemoveReason) error {
 
 func (s *cacheShard) reset(config Config) {
 	s.lock.Lock()
-	s.hashmap = make(map[uint64]uint64, config.initialShardSize())
-	s.entryBuffer = make([]byte, config.MaxEntrySize+headersSizeInBytes)
+	s.hashmap = make(map[uint64]uint64, config.initialShardMaxNum())
+	s.entryBuffer = make([]byte, config.MaxEntryByte+headersSizeInBytes)
 	s.entries.Reset()
 	s.lock.Unlock()
 }
@@ -494,16 +494,19 @@ func (s *cacheShard) collision() {
 }
 
 func initNewShard(config Config, callback onRemoveCallback, clock clock) *cacheShard {
-	bytesQueueInitialCapacity := config.initialShardSize() * config.MaxEntrySize
-	maximumShardSizeInBytes := config.maximumShardSizeInBytes()
-	if maximumShardSizeInBytes > 0 && bytesQueueInitialCapacity > maximumShardSizeInBytes {
-		bytesQueueInitialCapacity = maximumShardSizeInBytes
+	// 计算预计最大要用多少内存，先提前申请好。如果MaxEntrySize没有配，则为0
+	bytesQueueInitCapacity := config.initialShardMaxNum() * config.MaxEntryByte
+	// 配置的最大只能用多少内存
+	configMaxShardSizeInByte := config.ConfigMaxShardSizeInByte()
+	// 如果计算的最大内存比配置的最大内存大，那么最大内存以配置的为准
+	if configMaxShardSizeInByte > 0 && bytesQueueInitCapacity > configMaxShardSizeInByte {
+		bytesQueueInitCapacity = configMaxShardSizeInByte
 	}
 	return &cacheShard{
-		hashmap:      make(map[uint64]uint64, config.initialShardSize()),
-		hashmapStats: make(map[uint64]uint32, config.initialShardSize()),
-		entries:      *queue.NewBytesQueue(bytesQueueInitialCapacity, maximumShardSizeInBytes, config.Verbose),
-		entryBuffer:  make([]byte, config.MaxEntrySize+headersSizeInBytes),
+		hashmap:      make(map[uint64]uint64, config.initialShardMaxNum()),
+		hashmapStats: make(map[uint64]uint32, config.initialShardMaxNum()),
+		entries:      *queue.NewBytesQueue(bytesQueueInitCapacity, configMaxShardSizeInByte, config.Verbose),
+		entryBuffer:  make([]byte, config.MaxEntryByte+headersSizeInBytes),
 		onRemove:     callback,
 
 		isVerbose:    config.Verbose,

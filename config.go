@@ -8,7 +8,7 @@ Shards: 缓存分片数量，必须是2的幂，用于提高并发性能
 LifeWindow: 缓存条目的有效期，过期后条目会被清除。
 CleanWindow: 清理过期条目的时间间隔，设为0表示不自动清理。
 MaxEntriesInWindow: 生命周期窗口内的最大条目数，用于计算分片的初始大小。
-MaxEntrySize: 单个条目的最大大小（字节），用于计算分片的初始大小。
+MaxEntryByte: 单个条目的最大大小（字节），用于计算分片的初始大小。
 StatsEnabled: 是否启用统计功能，跟踪缓存资源的访问次数。
 Verbose: 是否启用详细模式，打印内存分配信息。
 Hasher: 用于将键映射为64位整数的哈希函数，默认使用fnv64哈希。
@@ -36,7 +36,7 @@ type Config struct {
 	MaxEntriesInWindow int
 	// Max size of entry in bytes. Used only to calculate initial size for cache shards.
 	// 单个条目的最大大小（字节），用于计算分片的初始大小
-	MaxEntrySize int
+	MaxEntryByte int
 	// StatsEnabled if true calculate the number of times a cached resource was requested.
 	//是否启用统计功能，跟踪缓存资源的访问次数
 	StatsEnabled bool
@@ -82,13 +82,13 @@ type Config struct {
 
 // DefaultConfig initializes config with default values.
 // When load for BigCache can be predicted in advance then it is better to use custom config.
-func DefaultConfig(eviction time.Duration) Config {
+func DefaultConfig(expireTime time.Duration) Config {
 	return Config{
 		Shards:             1024,
-		LifeWindow:         eviction,
+		LifeWindow:         expireTime,
 		CleanWindow:        1 * time.Second,
 		MaxEntriesInWindow: 1000 * 10 * 60,
-		MaxEntrySize:       500,
+		MaxEntryByte:       500,
 		StatsEnabled:       false,
 		Verbose:            true,
 		Hasher:             newDefaultHasher(),
@@ -97,13 +97,19 @@ func DefaultConfig(eviction time.Duration) Config {
 	}
 }
 
-// initialShardSize computes initial shard size
-func (c Config) initialShardSize() int {
+// initialShardMaxNum computes initial shard size
+/**
+ zhmark 2024/8/30 初始化时，每个分片最大的条目数
+ 	c.MaxEntriesInWindow：缓存窗口中的最大条目数
+	c.Shards：分片的数量
+	minimumEntriesInShard：每个分片的最小条目数
+**/
+func (c Config) initialShardMaxNum() int {
 	return max(c.MaxEntriesInWindow/c.Shards, minimumEntriesInShard)
 }
 
-// maximumShardSizeInBytes computes maximum shard size in bytes
-func (c Config) maximumShardSizeInBytes() int {
+// ConfigMaxShardSizeInByte computes maximum shard size in bytes
+func (c Config) ConfigMaxShardSizeInByte() int {
 	maxShardSize := 0
 
 	if c.HardMaxCacheSize > 0 {

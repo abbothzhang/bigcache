@@ -22,6 +22,7 @@ func TestWriteAndGetOnCache(t *testing.T) {
 
 	// when
 	cache.Set("key", value)
+	cache.Set("key2", value)
 	cachedValue, err := cache.Get("key")
 
 	// then
@@ -87,7 +88,7 @@ func TestAppendRandomly(t *testing.T) {
 		LifeWindow:         5 * time.Second,
 		CleanWindow:        1 * time.Second,
 		MaxEntriesInWindow: 1000 * 10 * 60,
-		MaxEntrySize:       500,
+		MaxEntryByte:       500,
 		StatsEnabled:       true,
 		Verbose:            true,
 		Hasher:             newDefaultHasher(),
@@ -150,7 +151,7 @@ func TestAppendCollision(t *testing.T) {
 		Shards:             1,
 		LifeWindow:         5 * time.Second,
 		MaxEntriesInWindow: 10,
-		MaxEntrySize:       256,
+		MaxEntryByte:       256,
 		Verbose:            true,
 		Hasher:             hashStub(5),
 	})
@@ -183,7 +184,7 @@ func TestConstructCacheWithDefaultHasher(t *testing.T) {
 		Shards:             16,
 		LifeWindow:         5 * time.Second,
 		MaxEntriesInWindow: 10,
-		MaxEntrySize:       256,
+		MaxEntryByte:       256,
 	})
 
 	_, ok := cache.hash.(fnv64a)
@@ -206,7 +207,7 @@ func TestNewBigcacheValidation(t *testing.T) {
 			want: "MaxEntriesInWindow must be >= 0",
 		},
 		{
-			cfg:  Config{Shards: 16, MaxEntrySize: -1},
+			cfg:  Config{Shards: 16, MaxEntryByte: -1},
 			want: "MaxEntrySize must be >= 0",
 		},
 		{
@@ -231,7 +232,7 @@ func TestEntryNotFound(t *testing.T) {
 		Shards:             16,
 		LifeWindow:         5 * time.Second,
 		MaxEntriesInWindow: 10,
-		MaxEntrySize:       256,
+		MaxEntryByte:       256,
 	})
 
 	// when
@@ -250,7 +251,7 @@ func TestTimingEviction(t *testing.T) {
 		Shards:             1,
 		LifeWindow:         time.Second,
 		MaxEntriesInWindow: 1,
-		MaxEntrySize:       256,
+		MaxEntryByte:       256,
 	}, &clock)
 
 	cache.Set("key", []byte("value"))
@@ -281,7 +282,7 @@ func TestTimingEvictionShouldEvictOnlyFromUpdatedShard(t *testing.T) {
 		Shards:             4,
 		LifeWindow:         time.Second,
 		MaxEntriesInWindow: 1,
-		MaxEntrySize:       256,
+		MaxEntryByte:       256,
 	}, &clock)
 
 	// when
@@ -304,7 +305,7 @@ func TestCleanShouldEvictAll(t *testing.T) {
 		LifeWindow:         time.Second,
 		CleanWindow:        time.Second,
 		MaxEntriesInWindow: 1,
-		MaxEntrySize:       256,
+		MaxEntryByte:       256,
 	})
 
 	// when
@@ -336,7 +337,7 @@ func TestOnRemoveCallback(t *testing.T) {
 		Shards:             1,
 		LifeWindow:         time.Second,
 		MaxEntriesInWindow: 1,
-		MaxEntrySize:       256,
+		MaxEntryByte:       256,
 		OnRemove:           onRemove,
 		OnRemoveWithReason: onRemoveExt,
 	}, &clock)
@@ -367,7 +368,7 @@ func TestOnRemoveWithReasonCallback(t *testing.T) {
 		Shards:             1,
 		LifeWindow:         time.Second,
 		MaxEntriesInWindow: 1,
-		MaxEntrySize:       256,
+		MaxEntryByte:       256,
 		OnRemoveWithReason: onRemove,
 	}, &clock)
 
@@ -393,7 +394,7 @@ func TestOnRemoveFilter(t *testing.T) {
 		Shards:             1,
 		LifeWindow:         time.Second,
 		MaxEntriesInWindow: 1,
-		MaxEntrySize:       256,
+		MaxEntryByte:       256,
 		OnRemoveWithReason: onRemove,
 	}.OnRemoveFilterSet(Deleted, NoSpace)
 
@@ -436,7 +437,7 @@ func TestOnRemoveFilterExpired(t *testing.T) {
 		LifeWindow:         3 * time.Second,
 		CleanWindow:        0,
 		MaxEntriesInWindow: 10,
-		MaxEntrySize:       256,
+		MaxEntryByte:       256,
 		OnRemoveWithReason: onRemove,
 	}
 
@@ -488,7 +489,7 @@ func TestOnRemoveGetEntryStats(t *testing.T) {
 		Shards:               1,
 		LifeWindow:           time.Second,
 		MaxEntriesInWindow:   1,
-		MaxEntrySize:         256,
+		MaxEntryByte:         256,
 		OnRemoveWithMetadata: onRemove,
 		StatsEnabled:         true,
 	}.OnRemoveFilterSet(Deleted, NoSpace)
@@ -516,7 +517,7 @@ func TestCacheLen(t *testing.T) {
 		Shards:             8,
 		LifeWindow:         time.Second,
 		MaxEntriesInWindow: 1,
-		MaxEntrySize:       256,
+		MaxEntryByte:       256,
 	})
 	keys := 1337
 
@@ -537,7 +538,7 @@ func TestCacheCapacity(t *testing.T) {
 		Shards:             8,
 		LifeWindow:         time.Second,
 		MaxEntriesInWindow: 1,
-		MaxEntrySize:       256,
+		MaxEntryByte:       256,
 	})
 	keys := 1337
 
@@ -560,7 +561,7 @@ func TestCacheInitialCapacity(t *testing.T) {
 		LifeWindow:         time.Second,
 		MaxEntriesInWindow: 2 * 1024,
 		HardMaxCacheSize:   1,
-		MaxEntrySize:       1024,
+		MaxEntryByte:       1024,
 	})
 
 	assertEqual(t, 0, cache.Len())
@@ -586,7 +587,7 @@ func TestRemoveEntriesWhenShardIsFull(t *testing.T) {
 		Shards:             1,
 		LifeWindow:         100 * time.Second,
 		MaxEntriesInWindow: 100,
-		MaxEntrySize:       256,
+		MaxEntryByte:       256,
 		HardMaxCacheSize:   1,
 	})
 
@@ -613,7 +614,7 @@ func TestCacheStats(t *testing.T) {
 		Shards:             8,
 		LifeWindow:         time.Second,
 		MaxEntriesInWindow: 1,
-		MaxEntrySize:       256,
+		MaxEntryByte:       256,
 	})
 
 	// when
@@ -654,7 +655,7 @@ func TestCacheEntryStats(t *testing.T) {
 		Shards:             8,
 		LifeWindow:         time.Second,
 		MaxEntriesInWindow: 1,
-		MaxEntrySize:       256,
+		MaxEntryByte:       256,
 		StatsEnabled:       true,
 	})
 
@@ -678,7 +679,7 @@ func TestCacheRestStats(t *testing.T) {
 		Shards:             8,
 		LifeWindow:         time.Second,
 		MaxEntriesInWindow: 1,
-		MaxEntrySize:       256,
+		MaxEntryByte:       256,
 	})
 
 	// when
@@ -750,7 +751,7 @@ func TestCacheDelRandomly(t *testing.T) {
 		LifeWindow:         time.Second,
 		CleanWindow:        0,
 		MaxEntriesInWindow: 10,
-		MaxEntrySize:       10,
+		MaxEntryByte:       10,
 		Verbose:            false,
 		Hasher:             newDefaultHasher(),
 		HardMaxCacheSize:   1,
@@ -844,7 +845,7 @@ func TestCacheReset(t *testing.T) {
 		Shards:             8,
 		LifeWindow:         time.Second,
 		MaxEntriesInWindow: 1,
-		MaxEntrySize:       256,
+		MaxEntryByte:       256,
 	})
 	keys := 1337
 
@@ -879,7 +880,7 @@ func TestIterateOnResetCache(t *testing.T) {
 		Shards:             8,
 		LifeWindow:         time.Second,
 		MaxEntriesInWindow: 1,
-		MaxEntrySize:       256,
+		MaxEntryByte:       256,
 	})
 	keys := 1337
 
@@ -903,7 +904,7 @@ func TestGetOnResetCache(t *testing.T) {
 		Shards:             8,
 		LifeWindow:         time.Second,
 		MaxEntriesInWindow: 1,
-		MaxEntrySize:       256,
+		MaxEntryByte:       256,
 	})
 	keys := 1337
 
@@ -930,7 +931,7 @@ func TestEntryUpdate(t *testing.T) {
 		Shards:             1,
 		LifeWindow:         6 * time.Second,
 		MaxEntriesInWindow: 1,
-		MaxEntrySize:       256,
+		MaxEntryByte:       256,
 	}, &clock)
 
 	// when
@@ -953,7 +954,7 @@ func TestOldestEntryDeletionWhenMaxCacheSizeIsReached(t *testing.T) {
 		Shards:             1,
 		LifeWindow:         5 * time.Second,
 		MaxEntriesInWindow: 1,
-		MaxEntrySize:       1,
+		MaxEntryByte:       1,
 		HardMaxCacheSize:   1,
 	})
 
@@ -980,7 +981,7 @@ func TestRetrievingEntryShouldCopy(t *testing.T) {
 		Shards:             1,
 		LifeWindow:         5 * time.Second,
 		MaxEntriesInWindow: 1,
-		MaxEntrySize:       1,
+		MaxEntryByte:       1,
 		HardMaxCacheSize:   1,
 	})
 	cache.Set("key1", blob('a', 1024*400))
@@ -1006,7 +1007,7 @@ func TestEntryBiggerThanMaxShardSizeError(t *testing.T) {
 		Shards:             1,
 		LifeWindow:         5 * time.Second,
 		MaxEntriesInWindow: 1,
-		MaxEntrySize:       1,
+		MaxEntryByte:       1,
 		HardMaxCacheSize:   1,
 	})
 
@@ -1026,7 +1027,7 @@ func TestHashCollision(t *testing.T) {
 		Shards:             16,
 		LifeWindow:         5 * time.Second,
 		MaxEntriesInWindow: 10,
-		MaxEntrySize:       256,
+		MaxEntryByte:       256,
 		Verbose:            true,
 		Hasher:             hashStub(5),
 		Logger:             ml,
@@ -1067,7 +1068,7 @@ func TestNilValueCaching(t *testing.T) {
 		Shards:             1,
 		LifeWindow:         5 * time.Second,
 		MaxEntriesInWindow: 1,
-		MaxEntrySize:       1,
+		MaxEntryByte:       1,
 		HardMaxCacheSize:   1,
 	})
 
@@ -1129,7 +1130,7 @@ func TestEntryNotPresent(t *testing.T) {
 		Shards:             1,
 		LifeWindow:         5 * time.Second,
 		MaxEntriesInWindow: 1,
-		MaxEntrySize:       1,
+		MaxEntryByte:       1,
 		HardMaxCacheSize:   1,
 	}, &clock)
 
@@ -1151,7 +1152,7 @@ func TestBigCache_GetWithInfo(t *testing.T) {
 		LifeWindow:         5 * time.Second,
 		CleanWindow:        5 * time.Minute,
 		MaxEntriesInWindow: 1,
-		MaxEntrySize:       1,
+		MaxEntryByte:       1,
 		HardMaxCacheSize:   1,
 		Verbose:            true,
 	}, &clock)
@@ -1209,7 +1210,7 @@ func TestBigCache_GetWithInfoCollision(t *testing.T) {
 		Shards:             1,
 		LifeWindow:         5 * time.Second,
 		MaxEntriesInWindow: 10,
-		MaxEntrySize:       256,
+		MaxEntryByte:       256,
 		Verbose:            true,
 		Hasher:             hashStub(5),
 	})
@@ -1279,7 +1280,7 @@ func TestCache_RepeatedSetWithBiggerEntry(t *testing.T) {
 	opt := DefaultConfig(time.Second)
 	opt.Shards = 2 << 10
 	opt.MaxEntriesInWindow = 1024
-	opt.MaxEntrySize = 1
+	opt.MaxEntryByte = 1
 	opt.HardMaxCacheSize = 1
 	bc, _ := New(context.Background(), opt)
 
@@ -1322,7 +1323,7 @@ func TestBigCache_allocateAdditionalMemoryLeadPanic(t *testing.T) {
 	cache, _ := newBigCache(context.Background(), Config{
 		Shards:       1,
 		LifeWindow:   3 * time.Second,
-		MaxEntrySize: 52,
+		MaxEntryByte: 52,
 	}, &clock)
 	ts := time.Now().Unix()
 	clock.set(ts)
@@ -1365,7 +1366,7 @@ func TestRemoveNonExpiredData(t *testing.T) {
 
 	config := DefaultConfig(10 * time.Minute)
 	config.HardMaxCacheSize = 1
-	config.MaxEntrySize = 1024
+	config.MaxEntryByte = 1024
 	config.MaxEntriesInWindow = 1024
 	config.OnRemoveWithReason = onRemove
 	cache, err := New(context.Background(), config)

@@ -71,6 +71,14 @@ func getNeededSize(length int) int {
 // NewBytesQueue initialize new bytes queue.
 // capacity is used in bytes array allocation
 // When verbose flag is set then information about memory allocation are printed
+//
+// NewBytesQueue initialize new bytes queue.
+//
+//	@Description: 初始化字节队列
+//	@param capacity: 当前队列的容量，即可以容纳的最大字节数
+//	@param maxCapacity: 队列的最大容量，表示队列能够扩展到的最大字节数
+//	@param verbose
+//	@return *BytesQueue
 func NewBytesQueue(capacity int, maxCapacity int, verbose bool) *BytesQueue {
 	return &BytesQueue{
 		array:        make([]byte, capacity),

@@ -21,7 +21,7 @@ func BenchmarkWriteToLimitedCacheWithSmallInitSizeAnd1Shard(b *testing.B) {
 		Shards:             1,
 		LifeWindow:         100 * time.Second,
 		MaxEntriesInWindow: 100,
-		MaxEntrySize:       256,
+		MaxEntryByte:       256,
 		HardMaxCacheSize:   1,
 	})
 
@@ -37,7 +37,7 @@ func BenchmarkWriteToUnlimitedCacheWithSmallInitSizeAnd1Shard(b *testing.B) {
 		Shards:             1,
 		LifeWindow:         100 * time.Second,
 		MaxEntriesInWindow: 100,
-		MaxEntrySize:       256,
+		MaxEntryByte:       256,
 	})
 
 	b.ReportAllocs()
@@ -86,7 +86,7 @@ func BenchmarkIterateOverCache(b *testing.B) {
 				Shards:             shards,
 				LifeWindow:         1000 * time.Second,
 				MaxEntriesInWindow: max(b.N, 100),
-				MaxEntrySize:       500,
+				MaxEntryByte:       500,
 			})
 
 			for i := 0; i < b.N; i++ {
@@ -126,7 +126,7 @@ func writeToCache(b *testing.B, shards int, lifeWindow time.Duration, requestsIn
 		Shards:             shards,
 		LifeWindow:         lifeWindow,
 		MaxEntriesInWindow: max(requestsInLifeWindow, 100),
-		MaxEntrySize:       500,
+		MaxEntryByte:       500,
 	})
 	rand.Seed(time.Now().Unix())
 
@@ -147,7 +147,7 @@ func appendToCache(b *testing.B, shards int, lifeWindow time.Duration, requestsI
 		Shards:             shards,
 		LifeWindow:         lifeWindow,
 		MaxEntriesInWindow: max(requestsInLifeWindow, 100),
-		MaxEntrySize:       2000,
+		MaxEntryByte:       2000,
 	})
 	rand.Seed(time.Now().Unix())
 
@@ -171,7 +171,7 @@ func readFromCache(b *testing.B, shards int, info bool) {
 		Shards:             shards,
 		LifeWindow:         1000 * time.Second,
 		MaxEntriesInWindow: max(b.N, 100),
-		MaxEntrySize:       500,
+		MaxEntryByte:       500,
 	})
 	for i := 0; i < b.N; i++ {
 		cache.Set(strconv.Itoa(i), message)
@@ -196,7 +196,7 @@ func readFromCacheNonExistentKeys(b *testing.B, shards int) {
 		Shards:             shards,
 		LifeWindow:         1000 * time.Second,
 		MaxEntriesInWindow: max(b.N, 100),
-		MaxEntrySize:       500,
+		MaxEntryByte:       500,
 	})
 	b.ResetTimer()
 

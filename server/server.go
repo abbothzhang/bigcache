@@ -41,7 +41,7 @@ func init() {
 	flag.IntVar(&config.MaxEntriesInWindow, "maxInWindow", 1000*10*60, "Used only in initial memory allocation.")
 	flag.DurationVar(&config.LifeWindow, "lifetime", 100000*100000*60, "Lifetime of each cache object.")
 	flag.IntVar(&config.HardMaxCacheSize, "max", 8192, "Maximum amount of data in the cache in MB.")
-	flag.IntVar(&config.MaxEntrySize, "maxShardEntrySize", 500, "The maximum size of each object stored in a shard. Used only in initial memory allocation.")
+	flag.IntVar(&config.MaxEntryByte, "maxShardEntrySize", 500, "The maximum size of each object stored in a shard. Used only in initial memory allocation.")
 	flag.IntVar(&port, "port", 9090, "The port to listen on.")
 	flag.StringVar(&logfile, "logfile", "", "Location of the logfile.")
 	flag.BoolVar(&ver, "version", false, "Print server version.")

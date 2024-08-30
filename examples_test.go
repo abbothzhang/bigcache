@@ -38,7 +38,7 @@ func Example_custom() {
 		MaxEntriesInWindow: 1000 * 10 * 60,
 
 		// max entry size in bytes, used only in initial memory allocation
-		MaxEntrySize: 500,
+		MaxEntryByte: 500,
 
 		// prints information about additional memory allocation
 		Verbose: true,

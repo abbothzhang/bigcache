@@ -20,7 +20,7 @@ func TestEntriesIterator(t *testing.T) {
 		Shards:             8,
 		LifeWindow:         6 * time.Second,
 		MaxEntriesInWindow: 1,
-		MaxEntrySize:       256,
+		MaxEntryByte:       256,
 	})
 	value := []byte("value")
 
@@ -53,7 +53,7 @@ func TestEntriesIteratorWithMostShardsEmpty(t *testing.T) {
 		Shards:             8,
 		LifeWindow:         6 * time.Second,
 		MaxEntriesInWindow: 1,
-		MaxEntrySize:       256,
+		MaxEntryByte:       256,
 	}, &clock)
 
 	cache.Set("key", []byte("value"))
@@ -84,7 +84,7 @@ func TestEntriesIteratorWithConcurrentUpdate(t *testing.T) {
 		Shards:             1,
 		LifeWindow:         time.Second,
 		MaxEntriesInWindow: 1,
-		MaxEntrySize:       256,
+		MaxEntryByte:       256,
 	})
 
 	cache.Set("key", []byte("value"))
@@ -126,7 +126,7 @@ func TestEntriesIteratorWithAllShardsEmpty(t *testing.T) {
 		Shards:             1,
 		LifeWindow:         time.Second,
 		MaxEntriesInWindow: 1,
-		MaxEntrySize:       256,
+		MaxEntryByte:       256,
 	})
 
 	// when
@@ -146,7 +146,7 @@ func TestEntriesIteratorInInvalidState(t *testing.T) {
 		Shards:             1,
 		LifeWindow:         time.Second,
 		MaxEntriesInWindow: 1,
-		MaxEntrySize:       256,
+		MaxEntryByte:       256,
 	})
 
 	// when
@@ -196,7 +196,7 @@ func TestParallelSetAndIteration(t *testing.T) {
 		Shards:             1,
 		LifeWindow:         time.Second,
 		MaxEntriesInWindow: 100,
-		MaxEntrySize:       256,
+		MaxEntryByte:       256,
 		HardMaxCacheSize:   1,
 		Verbose:            true,
 	})
