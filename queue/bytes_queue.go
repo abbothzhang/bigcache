@@ -10,6 +10,7 @@ const (
 	// Number of bytes to encode 0 in uvarint format
 	minimumHeaderSize = 17 // 1 byte blobsize + timestampSizeInBytes + hashSizeInBytes
 	// Bytes before left margin are not used. Zero index means element does not exist in queue, useful while reading slice from index
+	// 因为head、tail默认会被赋初始值0，为了区分是否默认赋值，初始化时将值设为leftMarginIndex=1
 	leftMarginIndex = 1
 )
 
@@ -37,7 +38,7 @@ type BytesQueue struct {
 	tail int
 	// count 当前队列中的元素数量
 	count int
-	// rightMargin 可能用于计算或管理队列中的边际空间
+	// rightMargin 用于计算或管理队列中的边际空间
 	rightMargin int
 	// headerBuffer 可能用于存储额外的头部数据或作为缓存的一部分
 	headerBuffer []byte
@@ -115,15 +116,20 @@ func (q *BytesQueue) Reset() {
 //	@return error
 //
 // Push 方法向队列中添加数据，接收一个 []byte 类型的参数 data，并返回插入位置的索引和可能发生的错误。
+/**
+ zhmark 2024/8/30
+ 从队列头部0开始，慢慢往后插入数据
+**/
 func (q *BytesQueue) Push(data []byte) (int, error) {
 	// 计算插入数据所需的大小
 	neededSize := getNeededSize(len(data))
 
 	// 检查队列是否能在尾部插入所需大小的数据
 	if !q.canInsertAfterTail(neededSize) {
-		// 如果不能在尾部插入数据，检查是否可以在头部插入
+		// 如果不能在尾部插入数据，说明队列已经满了
+		//检查是否可以在头部插入
 		if q.canInsertBeforeHead(neededSize) {
-			// 如果可以在头部插入数据，调整尾部位置到队列的左边缘位置
+			// 如果可以在头部前插入数据，调整尾部位置到队列的左边缘位置
 			q.tail = leftMarginIndex
 		} else if q.capacity+neededSize >= q.maxCapacity && q.maxCapacity > 0 {
 			// 如果队列的当前容量加上需要插入的数据大小大于或等于最大容量限制，并且最大容量大于0，返回错误
@@ -144,6 +150,7 @@ func (q *BytesQueue) Push(data []byte) (int, error) {
 	return index, nil
 }
 
+// 重新扩容，建一个2倍大小的byte，将老数据复制过去
 func (q *BytesQueue) allocateAdditionalMemory(minimum int) {
 	start := time.Now()
 	if q.capacity < minimum {
@@ -158,6 +165,7 @@ func (q *BytesQueue) allocateAdditionalMemory(minimum int) {
 	q.array = make([]byte, q.capacity)
 
 	if leftMarginIndex != q.rightMargin {
+		//
 		copy(q.array, oldArray[:q.rightMargin])
 
 		if q.tail <= q.head {
@@ -282,10 +290,12 @@ func (q *BytesQueue) peek(index int) ([]byte, int, error) {
 }
 
 // canInsertAfterTail returns true if it's possible to insert an entry of size of need after the tail of the queue
+
 func (q *BytesQueue) canInsertAfterTail(need int) bool {
 	if q.full {
 		return false
 	}
+	// 如果尾部在头后面，说明还没重写，只要队列长度减去尾部位置大于需要的大小就行
 	if q.tail >= q.head {
 		return q.capacity-q.tail >= need
 	}
@@ -293,6 +303,8 @@ func (q *BytesQueue) canInsertAfterTail(need int) bool {
 	// to reserve extra space for a potential empty entry when realloc this queue
 	// 2. still have unused space between tail and head, then we must reserve
 	// at least headerEntrySize bytes so we can put an empty entry
+	// 1. 头部和尾部之间的字节数正好满足需求，因此在重新分配这个队列时，我们不需要为潜在的空条目保留额外的空间。
+	// 2. 头部和尾部之间仍然有未使用的空间，因此我们必须至少保留 headerEntrySize 字节，以便能够放置一个空条目
 	return q.head-q.tail == need || q.head-q.tail >= need+minimumHeaderSize
 }
 
@@ -302,6 +314,8 @@ func (q *BytesQueue) canInsertBeforeHead(need int) bool {
 		return false
 	}
 	if q.tail >= q.head {
+		// q.head-leftMarginIndex == need： 检查从头部 (q.head) 到队列的左边缘 (leftMarginIndex) 的空间是否恰好等于所需的大小 (need)
+		// q.head-leftMarginIndex >= need+minimumHeaderSize： 为什么还要多这个判断，有点奇怪 todo
 		return q.head-leftMarginIndex == need || q.head-leftMarginIndex >= need+minimumHeaderSize
 	}
 	return q.head-q.tail == need || q.head-q.tail >= need+minimumHeaderSize

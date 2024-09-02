@@ -97,14 +97,14 @@ func DefaultConfig(expireTime time.Duration) Config {
 	}
 }
 
-// initialShardMaxNum computes initial shard size
+// initShardMaxNum computes initial shard size
 /**
  zhmark 2024/8/30 初始化时，每个分片最大的条目数
  	c.MaxEntriesInWindow：缓存窗口中的最大条目数
 	c.Shards：分片的数量
 	minimumEntriesInShard：每个分片的最小条目数
 **/
-func (c Config) initialShardMaxNum() int {
+func (c Config) initShardMaxNum() int {
 	return max(c.MaxEntriesInWindow/c.Shards, minimumEntriesInShard)
 }
 

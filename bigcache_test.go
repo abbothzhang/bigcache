@@ -14,10 +14,22 @@ import (
 )
 
 func TestWriteAndGetOnCache(t *testing.T) {
+	// 可以和其他单元测试并行
 	t.Parallel()
 
 	// given
-	cache, _ := New(context.Background(), DefaultConfig(5*time.Second))
+	cache, _ := New(context.Background(), Config{
+		Shards:             1024,
+		LifeWindow:         5 * time.Second,
+		CleanWindow:        1 * time.Second,
+		MaxEntriesInWindow: 1000 * 10 * 60,
+		//MaxEntryByte:       500,
+		StatsEnabled:     false,
+		Verbose:          true,
+		Hasher:           newDefaultHasher(),
+		HardMaxCacheSize: 0,
+		Logger:           DefaultLogger(),
+	})
 	value := []byte("value")
 
 	// when
