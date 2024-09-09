@@ -16,6 +16,7 @@ const (
 //	@Description: zhmark 2024/8/20 核心存储结构
 //
 // blob:Binary Large Object,二进制大对象
+// entry结构：timestamp + hashkey + keyLength + key + value
 //
 //	@param timestamp:
 //	@param hash

@@ -285,7 +285,10 @@ func (q *BytesQueue) peek(index int) ([]byte, int, error) {
 		return nil, 0, err
 	}
 
+	// blockSize：解码得到的整数（数据块的大小）
+	// n：读取 blockSize 所需的字节数
 	blockSize, n := binary.Uvarint(q.array[index:])
+	//从 q.array 中提取并返回实际数据块及其大小
 	return q.array[index+n : index+int(blockSize)], int(blockSize), nil
 }
 

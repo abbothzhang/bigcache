@@ -151,10 +151,10 @@ func (c *BigCache) GetWithInfo(key string) ([]byte, Response, error) {
 }
 
 // Set saves entry under the key
-func (c *BigCache) Set(key string, entry []byte) error {
+func (c *BigCache) Set(key string, value []byte) error {
 	hashedKey := c.hash.Sum64(key)
 	shard := c.getShard(hashedKey)
-	return shard.set(key, hashedKey, entry)
+	return shard.set(key, hashedKey, value)
 }
 
 // Append appends entry under the key if key exists, otherwise
@@ -252,6 +252,7 @@ func (c *BigCache) cleanUp(currentTimestamp uint64) {
 }
 
 func (c *BigCache) getShard(hashedKey uint64) (shard *cacheShard) {
+	// shardMask=uint64(config.Shards - 1)，初始化的时候计算一次，不需要每次get时候计算，提高速度
 	return c.shards[hashedKey&c.shardMask]
 }
 

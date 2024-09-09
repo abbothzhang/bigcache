@@ -123,11 +123,11 @@ func (s *cacheShard) get(key string, hashedKey uint64) ([]byte, error) {
 		}
 		return nil, ErrEntryNotFound
 	}
-	entry := readEntry(wrappedEntry)
+	value := readEntry(wrappedEntry)
 	s.lock.RUnlock()
 	s.hit(hashedKey)
 
-	return entry, nil
+	return value, nil
 }
 
 func (s *cacheShard) getWrappedEntry(hashedKey uint64) ([]byte, error) {
